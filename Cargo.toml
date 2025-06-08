@@ -30,6 +30,8 @@ defmt = "1.0"
 defmt-rtt = "1.0"
 panic-probe = { version = "1.0", features = ["print-defmt"] }
 static_cell = "2"
+ssd1306 = "0.10.0"
+embedded-graphics = "0.8.1"
 
 [patch.crates-io]
 embassy-sync = { git = "https://github.com/embassy-rs/embassy.git", rev = "f35aa4005a63e8d478b2b95aaa2bfb316b72dece" }

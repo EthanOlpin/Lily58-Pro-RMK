@@ -7,16 +7,26 @@ mod keymap;
 mod macros;
 mod keyboard_macros;
 mod vial;
-
-use defmt::info;
+use core::fmt::Write;
+use defmt::{info, unwrap};
 use defmt_rtt as _;
-use embassy_executor::Spawner;
+use embassy_executor::{Executor, Spawner};
 use embassy_rp::{
     bind_interrupts,
-    flash::{Async, Flash},
+    flash::{Async as FlashAsync, Flash},
     gpio::{Input, Output},
-    peripherals::{PIO0, USB},
-    usb::{Driver, InterruptHandler},
+    i2c::{self, Async as I2CAsync, Config as I2CConfig, InterruptHandler as I2CInterruptHandler},
+    multicore::{spawn_core1, Stack},
+    peripherals::{I2C0, PIO0, USB},
+    usb::{Driver, InterruptHandler as USBInterruptHandler},
+};
+use embassy_time::Timer;
+use embedded_graphics::{
+    mono_font::{ascii::FONT_9X18_BOLD, MonoTextStyleBuilder},
+    pixelcolor::BinaryColor,
+    prelude::Point,
+    text::{Baseline, Text},
+    Drawable,
 };
 use panic_probe as _;
 use rmk::{
@@ -37,6 +47,10 @@ use rmk::{
         SPLIT_MESSAGE_MAX_SIZE,
     },
 };
+use ssd1306::{
+    mode::DisplayConfig, prelude::DisplayRotation, size::DisplaySize128x32, I2CDisplayInterface,
+    Ssd1306,
+};
 use static_cell::StaticCell;
 use vial::{VIAL_KEYBOARD_DEF, VIAL_KEYBOARD_ID};
 
@@ -45,8 +59,12 @@ use crate::{
     keymap::{COLS, ROWS},
 };
 
+bind_interrupts!(struct DisplayIrqs {
+    I2C0_IRQ => I2CInterruptHandler<I2C0>;
+});
+
 bind_interrupts!(struct Irqs {
-    USBCTRL_IRQ => InterruptHandler<USB>;
+    USBCTRL_IRQ => USBInterruptHandler<USB>;
     PIO0_IRQ_0 => UartInterruptHandler<PIO0>;
 });
 
@@ -54,11 +72,29 @@ const FLASH_SIZE: usize = 2 * 1024 * 1024;
 const ROW_OFFSET: usize = ROWS;
 const COL_OFFSET: usize = 0;
 
+static mut CORE1_STACK: Stack<4096> = Stack::new();
+static EXECUTOR1: StaticCell<Executor> = StaticCell::new();
+
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
     info!("RMK start!");
     // Initialize peripherals
     let p = embassy_rp::init(Default::default());
+
+    let mut i2c0_cfg = i2c::Config::default();
+    i2c0_cfg.frequency = 400_000; // 400 kHz = fast mode
+    let sda = p.PIN_16;
+    let scl = p.PIN_17;
+    let i2c0 = i2c::I2c::new_async(p.I2C0, scl, sda, DisplayIrqs, I2CConfig::default());
+
+    spawn_core1(
+        p.CORE1,
+        unsafe { &mut *core::ptr::addr_of_mut!(CORE1_STACK) },
+        move || {
+            let executor1 = EXECUTOR1.init(Executor::new());
+            executor1.run(|spawner| unwrap!(spawner.spawn(core1_task(i2c0))));
+        },
+    );
 
     // Create the usb driver, from the HAL
     let driver = Driver::new(p.USB, Irqs);
@@ -71,7 +107,7 @@ async fn main(_spawner: Spawner) {
     );
 
     // Use internal flash to emulate eeprom
-    let flash = Flash::<_, Async, FLASH_SIZE>::new(p.FLASH, p.DMA_CH0);
+    let flash = Flash::<_, FlashAsync, FLASH_SIZE>::new(p.FLASH, p.DMA_CH0);
 
     let keyboard_usb_config = KeyboardUsbConfig {
         vid: 0x4c4b,
@@ -135,4 +171,36 @@ async fn main(_spawner: Spawner) {
         ),
     )
     .await;
+}
+
+#[embassy_executor::task]
+async fn core1_task(i2c0: embassy_rp::i2c::I2c<'static, I2C0, I2CAsync>) {
+    let interface = I2CDisplayInterface::new(i2c0);
+    let mut display = Ssd1306::new(interface, DisplaySize128x32, DisplayRotation::Rotate0)
+        .into_buffered_graphics_mode();
+
+    display.init().unwrap();
+    display.flush().unwrap();
+
+    // Draw a counter that increments every second
+    let style = MonoTextStyleBuilder::new()
+        .font(&FONT_9X18_BOLD)
+        .text_color(BinaryColor::On)
+        .build();
+
+    let mut counter = 0;
+    loop {
+        display.clear_buffer();
+        let mut text = rmk::heapless::String::<256>::new();
+        write!(text, "Counter: {}", counter).unwrap();
+
+        Text::with_baseline(text.as_str(), Point::new(0, 0), style, Baseline::Top)
+            .draw(&mut display)
+            .unwrap();
+
+        display.flush().unwrap();
+
+        counter += 1;
+        Timer::after(embassy_time::Duration::from_secs(1)).await;
+    }
 }
