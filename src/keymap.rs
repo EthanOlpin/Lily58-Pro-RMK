@@ -47,6 +47,7 @@ const AST: KeyAction = shifted!(Kc8);
 const AT_: KeyAction = shifted!(Kc2);
 const BLO: KeyAction = k!(Bootloader);
 const BNG: KeyAction = shifted!(Kc1);
+const BSL: KeyAction = k!(Backslash);
 const BSP: KeyAction = k!(Backspace);
 const BTK: KeyAction = k!(Grave);
 const COM: KeyAction = k!(Comma);
@@ -100,6 +101,7 @@ const NXT: KeyAction = k!(MediaNextTrack);
 const PCT: KeyAction = shifted!(Kc5);
 const PGD: KeyAction = k!(PageDown);
 const PGU: KeyAction = k!(PageUp);
+const PIP: KeyAction = shifted!(Backslash);
 const PLS: KeyAction = shifted!(Equal);
 const PLY: KeyAction = k!(MediaPlayPause);
 const PRT: KeyAction = k!(PrintScreen);
@@ -167,8 +169,8 @@ pub const fn get_default_keymap() -> [[[KeyAction; COLS]; ROWS * 2]; NUM_LAYER] 
         lily_layer!(
             F01 F02 F03 F04 F05 F06         F07 F08 F09 F10 F11 F12
             TAB XXX XXX XXX XXX XXX         XXX XXX XXX XXX XXX MNS
-            LSH BNG AT_ HSH DLR PCT         CRC AMP AST LPR RPR PLS
-            LCT XXX XXX XXX XXX BTK END PGD GRV LSB RSB LCB RCB RSH
+            LSH BNG AT_ HSH DLR PCT         CRC AMP AST LPR RPR BSL
+            LCT XXX XXX XXX XXX BTK END PGD GRV LSB RSB LCB RCB PIP
                         LAL LGU LOW BLO ENT RAI DEL RGU
         ),
         lily_layer!(
