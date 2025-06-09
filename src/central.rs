@@ -7,7 +7,10 @@ mod keymap;
 mod macros;
 mod keyboard_macros;
 mod vial;
-use core::fmt::Write;
+use core::{
+    fmt::Write,
+    ops::{BitAnd, BitOr, BitXor},
+};
 use defmt::{info, unwrap};
 use defmt_rtt as _;
 use embassy_executor::{Executor, Spawner};
@@ -20,24 +23,25 @@ use embassy_rp::{
     peripherals::{I2C0, PIO0, USB},
     usb::{Driver, InterruptHandler as USBInterruptHandler},
 };
-use embassy_time::Timer;
 use embedded_graphics::{
-    mono_font::{ascii::FONT_9X18_BOLD, MonoTextStyleBuilder},
+    mono_font::{ascii::FONT_6X10, MonoTextStyleBuilder},
     pixelcolor::BinaryColor,
     prelude::Point,
-    text::{Baseline, Text},
+    text::{Baseline, Text, TextStyleBuilder},
     Drawable,
 };
 use panic_probe as _;
 use rmk::{
-    channel::EVENT_CHANNEL,
+    action::KeyAction,
+    channel::{blocking_mutex::raw::CriticalSectionRawMutex, channel::Channel, EVENT_CHANNEL},
     config::{
         BehaviorConfig, ControllerConfig, KeyboardUsbConfig, RmkConfig, StorageConfig, VialConfig,
     },
     debounce::default_debouncer::DefaultDebouncer,
+    event::Event,
     futures::future::join4,
     initialize_keymap_and_storage,
-    input_device::Runnable,
+    input_device::{InputDevice, Runnable},
     keyboard::Keyboard,
     light::LightController,
     run_devices, run_rmk,
@@ -75,6 +79,23 @@ const COL_OFFSET: usize = 0;
 static mut CORE1_STACK: Stack<4096> = Stack::new();
 static EXECUTOR1: StaticCell<Executor> = StaticCell::new();
 
+static KEY_EVENT_OBSERVER_CHANNEL: Channel<CriticalSectionRawMutex, Event, 16> = Channel::new();
+
+struct KeyEventBridge<T: InputDevice> {
+    underlying: T,
+}
+
+impl<T: InputDevice> InputDevice for KeyEventBridge<T> {
+    async fn read_event(&mut self) -> Event {
+        let event = self.underlying.read_event().await;
+        if KEY_EVENT_OBSERVER_CHANNEL.is_full() {
+            let _ = KEY_EVENT_OBSERVER_CHANNEL.receive().await;
+        }
+        KEY_EVENT_OBSERVER_CHANNEL.send(event).await;
+        event
+    }
+}
+
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
     info!("RMK start!");
@@ -86,15 +107,6 @@ async fn main(_spawner: Spawner) {
     let sda = p.PIN_16;
     let scl = p.PIN_17;
     let i2c0 = i2c::I2c::new_async(p.I2C0, scl, sda, DisplayIrqs, I2CConfig::default());
-
-    spawn_core1(
-        p.CORE1,
-        unsafe { &mut *core::ptr::addr_of_mut!(CORE1_STACK) },
-        move || {
-            let executor1 = EXECUTOR1.init(Executor::new());
-            executor1.run(|spawner| unwrap!(spawner.spawn(core1_task(i2c0))));
-        },
-    );
 
     // Create the usb driver, from the HAL
     let driver = Driver::new(p.USB, Irqs);
@@ -147,8 +159,20 @@ async fn main(_spawner: Spawner) {
 
     // Initialize the matrix + keyboard
     let debouncer = DefaultDebouncer::<ROWS, COLS>::new();
-    let mut matrix =
+    let matrix =
         CentralMatrix::<_, _, _, 0, 0, ROWS, COLS>::new(input_pins, output_pins, debouncer);
+
+    let mut bridge = KeyEventBridge { underlying: matrix };
+
+    spawn_core1(
+        p.CORE1,
+        unsafe { &mut *core::ptr::addr_of_mut!(CORE1_STACK) },
+        move || {
+            let executor1 = EXECUTOR1.init(Executor::new());
+            executor1.run(|spawner| unwrap!(spawner.spawn(core1_task(i2c0))));
+        },
+    );
+
     let mut keyboard = Keyboard::new(&keymap);
 
     // Initialize the light controller
@@ -157,9 +181,7 @@ async fn main(_spawner: Spawner) {
 
     // Start
     join4(
-        run_devices! (
-            (matrix) => EVENT_CHANNEL,
-        ),
+        run_devices! ((bridge) => EVENT_CHANNEL),
         keyboard.run(),
         run_peripheral_manager::<ROWS, COLS, ROW_OFFSET, COL_OFFSET, _>(0, uart_receiver),
         run_rmk(
@@ -175,32 +197,84 @@ async fn main(_spawner: Spawner) {
 
 #[embassy_executor::task]
 async fn core1_task(i2c0: embassy_rp::i2c::I2c<'static, I2C0, I2CAsync>) {
+    let keymap = keymap::get_default_keymap();
     let interface = I2CDisplayInterface::new(i2c0);
     let mut display = Ssd1306::new(interface, DisplaySize128x32, DisplayRotation::Rotate0)
         .into_buffered_graphics_mode();
 
     display.init().unwrap();
+    display.clear_buffer();
     display.flush().unwrap();
 
     // Draw a counter that increments every second
     let style = MonoTextStyleBuilder::new()
-        .font(&FONT_9X18_BOLD)
+        .font(&FONT_6X10)
         .text_color(BinaryColor::On)
         .build();
 
-    let mut counter = 0;
-    loop {
-        display.clear_buffer();
-        let mut text = rmk::heapless::String::<256>::new();
-        write!(text, "Counter: {}", counter).unwrap();
+    let mut text_buffer = rmk::heapless::String::<256>::new();
+    let mut layer = 0;
 
-        Text::with_baseline(text.as_str(), Point::new(0, 0), style, Baseline::Top)
-            .draw(&mut display)
-            .unwrap();
+    loop {
+        let Event::Key(key_event) = KEY_EVENT_OBSERVER_CHANNEL.receive().await else {
+            continue;
+        };
+
+        let row = key_event.row as usize;
+        let col = key_event.col as usize;
+
+        let key_action = keymap[layer][row][col];
+
+        let action = match key_action {
+            KeyAction::Single(action)
+            | KeyAction::Tap(action)
+            | KeyAction::TapHold(action, _)
+            | KeyAction::ModifierTapHold(action, _)
+            | KeyAction::OneShot(action)
+            | KeyAction::LayerTapHold(action, _)
+            | KeyAction::WithModifier(action, _) => action,
+            KeyAction::No | KeyAction::Transparent => continue,
+        };
+
+        // not accurate, it would be better to use the actual keymap's layer state
+        layer = match action {
+            rmk::action::Action::LayerOn(activated) if key_event.pressed => {
+                layer.bitor(activated as usize)
+            }
+            rmk::action::Action::LayerOn(deactivated) => layer.bitand(!deactivated as usize),
+            rmk::action::Action::LayerOff(deactivated) if key_event.pressed => {
+                layer.bitand(!deactivated as usize)
+            }
+            rmk::action::Action::LayerOff(deactivated) => layer.bitor(deactivated as usize),
+            // Toggle only on release
+            rmk::action::Action::LayerToggle(toggled) if !key_event.pressed => {
+                layer.bitxor(toggled as usize)
+            }
+            rmk::action::Action::LayerToggleOnly(overriden) if !key_event.pressed => {
+                layer.bitxor(overriden as usize).bitand(overriden as usize)
+            }
+            _ => layer,
+        };
+
+        display.clear_buffer();
+        text_buffer.clear();
+
+        write!(
+            text_buffer,
+            "{key_action:?}\nPressed: {}\nLayer: {}",
+            key_event.pressed, layer
+        )
+        .unwrap();
+
+        Text::with_text_style(
+            text_buffer.as_str(),
+            Point::new(0, 0),
+            style,
+            TextStyleBuilder::new().baseline(Baseline::Top).build(),
+        )
+        .draw(&mut display)
+        .unwrap();
 
         display.flush().unwrap();
-
-        counter += 1;
-        Timer::after(embassy_time::Duration::from_secs(1)).await;
     }
 }
