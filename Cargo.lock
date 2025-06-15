@@ -3,16 +3,6 @@
 version = 4
 
 [[package]]
-name = "Inflector"
-version = "0.11.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
-dependencies = [
- "lazy_static",
- "regex",
-]
-
-[[package]]
 name = "aes"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -197,32 +187,18 @@ dependencies = [
 
 [[package]]
 name = "bt-hci"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f377753756ec12e76b52d2dd657437be0448cc9736402ffadd0b8b8b9602c8a1"
-dependencies = [
- "defmt 0.3.100",
- "embassy-sync 0.6.2",
- "embassy-time",
- "embedded-io",
- "embedded-io-async",
- "futures-intrusive",
- "heapless 0.8.0",
- "uuid",
-]
-
-[[package]]
-name = "bt-hci"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fa7f7c19df9648c1da4f5356c4256533e38bd65633b6a41654922475a1c6d777"
 dependencies = [
  "defmt 1.0.1",
  "embassy-sync 0.7.0",
+ "embassy-time",
  "embedded-io",
  "embedded-io-async",
  "futures-intrusive",
  "heapless 0.8.0",
+ "uuid",
 ]
 
 [[package]]
@@ -332,7 +308,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "595aae20e65c3be792d05818e8c63025294ac3cb7e200f11459063a352a6ef80"
 dependencies = [
  "async-trait",
- "convert_case",
+ "convert_case 0.6.0",
  "json5",
  "pathdiff",
  "ron",
@@ -395,6 +371,15 @@ name = "convert_case"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
+dependencies = [
+ "unicode-segmentation",
+]
+
+[[package]]
+name = "convert_case"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "baaaa0ecca5b51987b9423ccdc971514dd8b0bb7b4060b983d3664dad3f1f89f"
 dependencies = [
  "unicode-segmentation",
 ]
@@ -1466,12 +1451,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lazy_static"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
-
-[[package]]
 name = "libc"
 version = "0.2.172"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1488,6 +1467,7 @@ dependencies = [
  "embassy-executor",
  "embassy-futures",
  "embassy-rp",
+ "embassy-sync 0.7.0",
  "embassy-time",
  "embedded-graphics",
  "json",
@@ -2031,12 +2011,11 @@ dependencies = [
 
 [[package]]
 name = "rmk"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6cf821a176544c8417647767ce7d4992a461329679297ef9b641e5c30d07e282"
+version = "0.7.2"
+source = "git+https://github.com/pcasotti/rmk.git?branch=feat%2Fcontroller-event#ba6a2ec5909379df7d676bfdbdbf3a4de052cead"
 dependencies = [
  "bitfield-struct",
- "bt-hci 0.3.2",
+ "bt-hci",
  "byteorder",
  "chrono",
  "const-gen",
@@ -2080,9 +2059,8 @@ dependencies = [
 
 [[package]]
 name = "rmk-config"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1894d97740c0f9a9c27a96e6d1054027d43c0d37f3559655aa2f21407e324d2c"
+version = "0.5.1"
+source = "git+https://github.com/pcasotti/rmk.git?branch=feat%2Fcontroller-event#ba6a2ec5909379df7d676bfdbdbf3a4de052cead"
 dependencies = [
  "cargo_toml",
  "config",
@@ -2098,9 +2076,8 @@ dependencies = [
 
 [[package]]
 name = "rmk-macro"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06293087e9e0d154d5e138c6ad31b2d66263f6107ebb1d4d206b1b292c197d95"
+version = "0.6.2"
+source = "git+https://github.com/pcasotti/rmk.git?branch=feat%2Fcontroller-event#ba6a2ec5909379df7d676bfdbdbf3a4de052cead"
 dependencies = [
  "cargo_toml",
  "darling",
@@ -2555,15 +2532,14 @@ checksum = "343e926fc669bc8cde4fa3129ab681c63671bae288b1f1081ceee6d9d37904fc"
 [[package]]
 name = "trouble-host"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b31abacc7bd8bc686160f6de3347a3b7669ae4a31e4eef9a306466e97d297cea"
+source = "git+https://github.com/embassy-rs/trouble?rev=cb4b2cd#cb4b2cd424cdb2af54bad52922798a58d8786d7f"
 dependencies = [
  "aes",
- "bt-hci 0.2.1",
+ "bt-hci",
  "cmac",
  "defmt 0.3.100",
  "embassy-futures",
- "embassy-sync 0.6.2",
+ "embassy-sync 0.7.0",
  "embassy-time",
  "embedded-io",
  "futures",
@@ -2579,10 +2555,9 @@ dependencies = [
 [[package]]
 name = "trouble-host-macros"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2798a58a818bdf9d98f5283cc7ac647f11ecbd1e5ff4cdc45a2a13c31bf86fd"
+source = "git+https://github.com/embassy-rs/trouble?rev=cb4b2cd#cb4b2cd424cdb2af54bad52922798a58d8786d7f"
 dependencies = [
- "Inflector",
+ "convert_case 0.8.0",
  "darling",
  "proc-macro2",
  "quote",

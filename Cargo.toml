@@ -10,7 +10,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-rmk = { version = "0.7", features = ["split", "rp2040_bl", "rp2040_pio"] }
+rmk = { git = "https://github.com/pcasotti/rmk.git", branch = "feat/controller-event", features = ["split", "rp2040_bl", "rp2040_pio", "controller"] }
 embassy-time = { version = "0.4", features = ["defmt"] }
 embassy-rp = { version = "0.4", features = [
     "rp2040",
@@ -32,6 +32,7 @@ panic-probe = { version = "1.0", features = ["print-defmt"] }
 static_cell = "2"
 ssd1306 = "0.10.0"
 embedded-graphics = "0.8.1"
+embassy-sync = "0.7.0"
 
 [patch.crates-io]
 embassy-sync = { git = "https://github.com/embassy-rs/embassy.git", rev = "f35aa4005a63e8d478b2b95aaa2bfb316b72dece" }

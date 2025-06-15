@@ -123,8 +123,7 @@ const VLD: KeyAction = k!(AudioVolUp);
 const VLU: KeyAction = k!(AudioVolDown);
 const XXX: KeyAction = a!(No);
 
-const FULL_COLS: usize = COLS * 2;
-const NUM_LAYER: usize = 3;
+pub const NUM_LAYERS: usize = 3;
 
 // Internally the peripheral board is flipped and treated like a vertical extension of the first board.
 // This macro allows us to specify the keymap in an order that matches the physical layout, since the
@@ -157,7 +156,7 @@ macro_rules! lily_layer {
     };
 }
 
-pub const fn get_default_keymap() -> [[[KeyAction; COLS]; ROWS * 2]; NUM_LAYER] {
+pub const fn get_default_keymap() -> [[[KeyAction; COLS]; ROWS * 2]; NUM_LAYERS] {
     [
         lily_layer!(
             ESC _1_ _2_ _3_ _4_ _5_         _6_ _7_ _8_ _9_ _0_ EQL
