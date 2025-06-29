@@ -8,8 +8,6 @@ mod macros;
 mod controllers;
 mod keyboard_macros;
 mod vial;
-use defmt::{info, unwrap};
-use defmt_rtt as _;
 use embassy_executor::{Executor, Spawner};
 use embassy_rp::{
     bind_interrupts,
@@ -64,8 +62,7 @@ static mut CORE1_STACK: Stack<4096> = Stack::new();
 static EXECUTOR1: StaticCell<Executor> = StaticCell::new();
 
 #[embassy_executor::main]
-async fn main(_spawner: Spawner) {
-    info!("RMK start!");
+async fn main(spawner: Spawner) {
     // Initialize peripherals
     let p = embassy_rp::init(Default::default());
 

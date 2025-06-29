@@ -6,8 +6,6 @@ mod keymap;
 #[macro_use]
 mod macros;
 
-use defmt::*;
-use defmt_rtt as _;
 use embassy_executor::Spawner;
 use embassy_rp::{
     bind_interrupts,
@@ -39,7 +37,6 @@ bind_interrupts!(struct Irqs {
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
-    info!("RMK start!");
     // Initialize peripherals
     let p = embassy_rp::init(Default::default());
 
