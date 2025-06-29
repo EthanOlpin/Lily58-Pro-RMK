@@ -174,10 +174,10 @@ pub const fn get_default_keymap() -> [[[KeyAction; COLS]; ROWS * 2]; NUM_LAYERS]
         ),
         lily_layer!(
             F13 F14 F15 F16 F17 F18         F19 F20 F21 F22 F23 F24
-            TAB PLS MNS AST SLS EQL         PLY PRV VLD VLU NXT PRT
-            LSH _1_ _2_ _3_ _4_ _5_         HOM LFT DWN UP_ RGT END
-            LCT _6_ _7_ _8_ _9_ _0_ DOT LPR _N_ _M_ COM DOT SLS RSH
-                        LAL LGU LOW SPC ENT RAI BSP RGU
+            ___ PLS MNS AST SLS EQL         PLY PRV VLD VLU NXT PRT
+            ___ _1_ _2_ _3_ _4_ _5_         HOM LFT DWN UP_ RGT END
+            ___ _6_ _7_ _8_ _9_ _0_ DOT LPR _N_ _M_ COM DOT SLS RSH
+                        ___ ___ ___ SPC ___ ___ BSP ___
         ),
     ]
 }
