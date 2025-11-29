@@ -1,6 +1,5 @@
 #![allow(dead_code)] // macros are treated as dead code sometimes
-use rmk::action::KeyAction;
-use rmk::{a, k, layer, mo, shifted};
+use rmk::{a, k, layer, mo, shifted, types::action::KeyAction};
 pub(crate) const COLS: usize = 6;
 pub(crate) const ROWS: usize = 5;
 
@@ -119,8 +118,8 @@ const SLS: KeyAction = k!(Slash);
 const SPC: KeyAction = k!(Space);
 const TAB: KeyAction = k!(Tab);
 const UP_: KeyAction = k!(Up);
-const VLD: KeyAction = k!(AudioVolUp);
-const VLU: KeyAction = k!(AudioVolDown);
+const VLD: KeyAction = k!(AudioVolDown);
+const VLU: KeyAction = k!(AudioVolUp);
 const XXX: KeyAction = a!(No);
 
 pub const NUM_LAYERS: usize = 3;

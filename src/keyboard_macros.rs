@@ -1,11 +1,12 @@
 use rmk::{
-    action::KeyAction,
     config::ForksConfig,
     fork::{Fork, StateBits},
     heapless::Vec,
-    hid_state::{HidModifiers, HidMouseButtons},
     k,
-    light::LedIndicator,
+    types::{
+        action::KeyAction, led_indicator::LedIndicator, modifier::ModifierCombination,
+        mouse_button::MouseButtons,
+    },
 };
 
 fn shift_override(action: KeyAction, override_action: KeyAction) -> Fork {
@@ -14,12 +15,12 @@ fn shift_override(action: KeyAction, override_action: KeyAction) -> Fork {
         action,
         override_action,
         StateBits::new_from(
-            HidModifiers::new_from(false, true, false, false, false, false, false, false),
+            ModifierCombination::new_from(false, true, false, false, false),
             LedIndicator::default(),
-            HidMouseButtons::default(),
+            MouseButtons::default(),
         ),
         StateBits::default(),
-        HidModifiers::default(),
+        ModifierCombination::default(),
         false,
     )
 }

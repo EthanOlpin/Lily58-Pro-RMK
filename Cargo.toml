@@ -10,13 +10,13 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-embassy-time = { version = "0.4" }
-embassy-rp = { version = "0.4", features = [
+embassy-time = { version = "0.5" }
+embassy-rp = { version = "0.8", features = [
     "rp2040",
     "time-driver",
     "critical-section-impl",
 ] }
-embassy-executor = { version = "0.7", features = [
+embassy-executor = { version = "0.9", features = [
     "arch-cortex-m",
     "executor-thread",
 ] }
@@ -26,23 +26,14 @@ portable-atomic = { version = "1.11", features = ["critical-section"] }
 panic-probe = { version = "1.0" }
 static_cell = "2"
 ssd1306 = { version = "0.10.0", features = ["async"] }
-embedded-graphics = "0.8.1"
 embassy-sync = "0.7.0"
-rmk = { version = "0.7", features = [
+rmk = { version = "0.8.1", features = [
     "split",
-    "rp2040_bl",
-    "rp2040_pio",
-    "usb_log",
+    "rp2040",
     "storage",
-    "col2row",
-    "controller",
-], default-features = false }
+    "host",
+], default-features = false}
 log = "0.4.27"
-
-[patch.crates-io]
-embassy-sync = { git = "https://github.com/embassy-rs/embassy.git", rev = "f35aa4005a63e8d478b2b95aaa2bfb316b72dece" }
-embassy-futures = { git = "https://github.com/embassy-rs/embassy.git", rev = "f35aa4005a63e8d478b2b95aaa2bfb316b72dece" }
-embassy-executor = { git = "https://github.com/embassy-rs/embassy.git", rev = "f35aa4005a63e8d478b2b95aaa2bfb316b72dece" }
 
 # [features]
 # avoid having to use --allow-multiple-definition linker flag
