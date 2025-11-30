@@ -14,7 +14,7 @@ use embassy_rp::usb::{Driver, InterruptHandler};
 use embassy_rp::{bind_interrupts, flash};
 use panic_probe as _;
 use rmk::channel::EVENT_CHANNEL;
-use rmk::config::{BehaviorConfig, DeviceConfig, PositionalConfig, RmkConfig, StorageConfig};
+use rmk::config::{BehaviorConfig, DeviceConfig, PositionalConfig, RmkConfig, StorageConfig, VialConfig};
 use rmk::debounce::default_debouncer::DefaultDebouncer;
 use rmk::futures::future::join4;
 use rmk::input_device::Runnable;
@@ -100,13 +100,13 @@ async fn main(_spawner: Spawner) {
     // initialize the OLED display
     // let display = init_oled_terminal(p.I2C0, p.PIN_16, p.PIN_17, DisplayRotation::Rotate90).await;
     // spawner.spawn(key_display_task(display)).unwrap();
-
+    
     // Start
     join4(
         run_devices! ((matrix) => EVENT_CHANNEL),
         keyboard.run(),
         run_peripheral_manager::<ROWS, COLS, ROW_OFFSET, COL_OFFSET, _>(0, uart_receiver),
-        run_rmk(&keymap, usb_driver, &mut storage, rmk_config),
+        run_rmk(usb_driver, &mut storage, rmk_config),
     )
     .await;
 }

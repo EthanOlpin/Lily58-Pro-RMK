@@ -20,8 +20,6 @@ use xz2::read::XzEncoder;
 fn main() {
     // Generate vial config at the root of project
     println!("cargo:rerun-if-changed=vial.json");
-    println!("cargo:rerun-if-changed=keyboard.toml");
-
     generate_vial_config();
 
     // Put `memory.x` in our output directory and ensure it's
@@ -48,11 +46,6 @@ fn main() {
 
     // Set the linker script to the one provided by cortex-m-rt.
     println!("cargo:rustc-link-arg=-Tlink.x");
-
-    // Set the linker script of the defmt
-    // println!("cargo:rustc-link-arg=-Tdefmt.x");
-
-    println!("cargo:rustc-linker=flip-link");
 }
 
 fn generate_vial_config() {

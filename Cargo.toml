@@ -27,11 +27,10 @@ panic-probe = { version = "1.0" }
 static_cell = "2"
 ssd1306 = { version = "0.10.0", features = ["async"] }
 embassy-sync = "0.7.0"
-rmk = { version = "0.8.1", features = [
+rmk = { path = "rmk/rmk", features = [
     "split",
     "rp2040",
     "storage",
-    "host",
 ], default-features = false}
 log = "0.4.27"
 
